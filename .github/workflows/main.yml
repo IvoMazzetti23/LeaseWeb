@@ -24,3 +24,18 @@ jobs:
 
     - name: Run Tests
       run: ./vendor/bin/phpunit --configuration phpunit.xml
+
+    - name: Deploy to Server via SSH
+      if: github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          cd /var/www/leaseweb
+          git pull origin main
+          docker-compose down 
+          docker-compose build --no-cache
+          docker-compose up -d
