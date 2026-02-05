@@ -28,6 +28,9 @@ This is a REST API for filtering server data from an Excel file, built with PHP.
 
 ## Usage
 
+### UI Interface Tool
+  `http://localhost:8000/servers.html`
+
 ### Endpoints
 
 #### GET `/api/servers`
