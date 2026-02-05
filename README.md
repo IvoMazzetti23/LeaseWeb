@@ -9,23 +9,18 @@ This is a REST API for filtering server data from an Excel file, built with PHP.
 
 ## Installation & Setup
 
-1.  **Install dependencies:**
-    ```bash
-    composer install
-    ```
-
 ### Using Docker (Recommended)
 
-2. **Build and start the container:**
+1. **Build and start the container:**
     ```bash
     docker-compose up -d --build
     ```
 
-3. The API will be available at `http://localhost:8000`.
-4. For browser access, you can access through `http://localhost:8000/servers.html`
-
 ### Local Setup
 
+1.  **Install dependencies:**
+    ```bash
+    composer install
 2.  **Start the development server:**
     ```bash
     php -S 0.0.0.0:8000 -t public
