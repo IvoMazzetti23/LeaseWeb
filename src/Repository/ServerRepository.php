@@ -38,7 +38,6 @@ class ServerRepository
             }
         }
 
-        // rebuild cache
         $servers = [];
 
         try {
@@ -71,7 +70,6 @@ class ServerRepository
             return $servers;
         }
 
-        // write cache (best-effort)
         try {
             $payload = [
                 'hash' => $currentHash,

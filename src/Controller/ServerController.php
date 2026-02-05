@@ -20,12 +20,12 @@ class ServerController
     public function index(Request $request): Response
     {
         $filterRequest = new ServerFilterRequest($request);
-        $filters = $filterRequest->getFilters();
 
         if ($filterRequest->hasErrors()) {
             return Response::json($filterRequest->getErrors(), 400);
         }
 
+        $filters = $filterRequest->getFilters();
         $servers = $this->service->getServers($filters);
 
         return Response::json($servers);
