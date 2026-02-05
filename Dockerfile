@@ -12,7 +12,7 @@ WORKDIR /var/www
 
 COPY composer.json composer.lock ./
 
-RUN composer install --no-dev --optimize-autoloader --prefer-dist
+RUN composer install --optimize-autoloader --prefer-dist
 
 COPY . .
 
