@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "8001:8000"
+      - "8002:8001"
     volumes:
       - ./src:/var/www/src
       - ./public:/var/www/public
