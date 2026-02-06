@@ -23,13 +23,13 @@ This is a REST API for filtering server data from an Excel file, built with PHP.
     composer install
 2.  **Start the development server:**
     ```bash
-    php -S 0.0.0.0:8000 -t public
+    php -S 0.0.0.0:8001 -t public
     ```
 
 ## Usage
 
 ### UI Interface Tool
-  `http://localhost:8000/servers.html`
+  `http://localhost:8001/servers.html`
 
 ### Endpoints
 
@@ -48,13 +48,13 @@ Get a list of servers, optionally filtered.
 **Example Requests:**
 
 - **Get all servers:**
-  `GET http://localhost:8000/api/servers`
+  `GET http://localhost:8001/api/servers`
 
 - **Filter by RAM (>= 64GB):**
-  `GET http://localhost:8000/api/servers?ram_min=16`
+  `GET http://localhost:8001/api/servers?ram_min=16`
 
 - **Filter by Location (Amsterdam) and Price (< 500):**
-  `GET http://localhost:8000/api/servers?location=Amsterdam&price_max=100`
+  `GET http://localhost:8001/api/servers?location=Amsterdam&price_max=100`
 
 ## Testing
 
