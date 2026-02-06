@@ -8,12 +8,12 @@ class ServerService
 {
     private ServerRepository $repository;
 
-    public function __construct(ServerRepository $repository = null)
+    public function __construct(?ServerRepository $repository = null)
     {
         $this->repository = $repository ?? new ServerRepository();
     }
 
-    public function getServers(array $filters = []): array
+    public function getServers(array $filters = [], ?string $cursor = null, int $limit = 20): array
     {
         $servers = $this->repository->getAll();
 
@@ -29,7 +29,38 @@ class ServerService
             $servers = self::filterByPrice($servers, $filters['price_max']);
         }
 
-        return array_values($servers);
+        $servers = array_values($servers);
+
+        usort($servers, fn($a, $b) => strcmp($a['id'], $b['id']));
+
+        $nextCursor = null;
+    
+        $resultData = [];
+        if ($cursor) {
+            $found = false;
+            foreach ($servers as $i => $server) {
+                if ($server['id'] === $cursor) {
+                    $servers = array_slice($servers, $i + 1);
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $servers = [];
+            }
+        }
+
+        $resultData = array_slice($servers, 0, $limit);
+
+        if (count($servers) > $limit) {
+            $lastItem = end($resultData);
+            $nextCursor = $lastItem['id'] ?? null;
+        }
+
+        return [
+            'data' => $resultData,
+            'cursor' => $nextCursor
+        ];
     }
 
     public static function filterByRam(array $servers, int $minRam): array
@@ -40,9 +71,16 @@ class ServerService
         });
     }
 
-    public static function filterByLocation(array $servers, string $location): array
+    public static function filterByLocation(array $servers, array $locations): array
     {
-        return array_filter($servers, fn($s) => stripos($s['Location'], $location) !== false);
+        return array_filter($servers, function ($s) use ($locations) {
+            foreach ($locations as $loc) {
+                if (stripos($s['Location'], $loc) !== false) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     public static function filterByPrice(array $servers, float $maxPrice): array

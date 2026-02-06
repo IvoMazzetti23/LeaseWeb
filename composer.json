@@ -3,7 +3,8 @@
     "description": "Rest API for Server Filtering",
     "type": "project",
     "require": {
-        "phpoffice/phpspreadsheet": "^5.4"
+        "phpoffice/phpspreadsheet": "^5.4",
+        "predis/predis": "^3.3"
     },
     "license": "MIT",
     "autoload": {

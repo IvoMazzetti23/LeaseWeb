@@ -29,13 +29,13 @@ class ServerFilterRequestTest extends TestCase
         }
     }
 
-    public function testGetFiltersReturnsValidStringForLocation()
+    public function testGetFiltersReturnsValidArrayForLocation()
     {
         $request = $this->createMockRequest(['location' => 'Amsterdam']);
         $filterRequest = new ServerFilterRequest($request);
         $filters = $filterRequest->getFilters();
 
-        $this->assertSame('Amsterdam', $filters['location']);
+        $this->assertEquals(['Amsterdam'], $filters['location']);
     }
 
     public function testGetFiltersReturnsValidFloatForPrice()
