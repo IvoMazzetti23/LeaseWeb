@@ -34,7 +34,7 @@ class ServerService
         usort($servers, fn($a, $b) => strcmp($a['id'], $b['id']));
 
         $nextCursor = null;
-    
+
         $resultData = [];
         if ($cursor) {
             $found = false;
@@ -86,8 +86,8 @@ class ServerService
     public static function filterByPrice(array $servers, float $maxPrice): array
     {
         return array_filter($servers, function ($s) use ($maxPrice) {
-            $price = (float) str_replace(['€', ','], ['', '.'], $s['Price']);
-            return $price <= $maxPrice;
+            $clean = preg_replace('/[^0-9.]/', '', $s['Price']);
+            return (float) $clean <= $maxPrice;
         });
     }
 }
