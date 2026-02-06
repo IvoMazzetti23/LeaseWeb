@@ -16,4 +16,4 @@ RUN composer install --optimize-autoloader --prefer-dist
 
 COPY . .
 
-CMD ["php", "-S", "0.0.0.0:8001", "-t", "public"]
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
