@@ -21,13 +21,16 @@ class ServerController
     {
         $filterRequest = new ServerFilterRequest($request);
 
+        $filters = $filterRequest->getFilters();
         if ($filterRequest->hasErrors()) {
             return Response::json($filterRequest->getErrors(), 400);
         }
 
-        $filters = $filterRequest->getFilters();
-        $servers = $this->service->getServers($filters);
+        $limit = $filterRequest->getLimit();
+        $cursor = $filterRequest->getCursor();
 
-        return Response::json($servers);
+        $result = $this->service->getServers($filters, $cursor, $limit);
+
+        return Response::json($result);
     }
 }

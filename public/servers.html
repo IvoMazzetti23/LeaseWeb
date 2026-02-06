@@ -311,297 +311,310 @@
     </style>
 </head>
 <body>
-<div class="app">
-    <div class="app-header">
-        <div class="title-group">
-            <div class="title">
+    <div class="app">
+        <div class="app-header">
+            <div class="title-group">
+                <div class="title">
+                    <span class="badge">Servers Explorer</span>
+                </div>
+                <div class="subtitle">
+                    Small interface on top of the <code>/api/servers</code> endpoint to explore and filter server data.
+                </div>
+            </div>
+        </div>
 
-                <span class="badge">Servers Explorer</span>
-            </div>
-            <div class="subtitle">
-                 Small interface on top of the <code>/api/servers</code> endpoint to explore and filter server data.
-            </div>
+        <div class="layout">
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">Filters</div>
+                        <div class="panel-subtitle">Tune your query and fetch matching servers from the API.</div>
+                    </div>
+                </div>
+
+                <form id="filters-form">
+                    <div class="filters-grid">
+                        <div class="field">
+                            <label class="field-label" for="ram_min">
+                                Minimum RAM (GB)
+                                <span>optional</span>
+                            </label>
+                            <input id="ram_min" name="ram_min" type="number" min="1" step="1" class="input"
+                                placeholder="e.g. 32" />
+                            <div class="error-text" id="ram_min_error"></div>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="location">
+                                Location
+                                <span>multiselect</span>
+                            </label>
+                            <select id="location" name="location" class="input" multiple size="4">
+                                <option value="Amsterdam">Amsterdam</option>
+                                <option value="Washington">Washington D.C.</option>
+                                <option value="Frankfurt">Frankfurt</option>
+                                <option value="Hong Kong">Hong Kong</option>
+                                <option value="San Francisco">San Francisco</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Dallas">Dallas</option>
+                            </select>
+                            <div class="field-label" style="margin-top:4px; font-size:10px;">Hold Ctrl/Cmd to select
+                                multiple</div>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="price_max">
+                                Maximum price (EUR)
+                                <span>optional</span>
+                            </label>
+                            <input id="price_max" name="price_max" type="number" min="0" step="0.01" class="input"
+                                placeholder="e.g. 500" />
+                            <div class="error-text" id="price_max_error"></div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <div class="buttons">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <span>Fetch servers</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="reset-btn">
+                                Clear filters
+                            </button>
+                        </div>
+                        <div class="status" id="status">
+                            <span class="status-dot" id="status-dot"></span>
+                            <span id="status-text">Idle</span>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">Results</div>
+                        <div class="panel-subtitle">Servers that match the current filters.</div>
+                    </div>
+                    <div class="chip" id="results-summary">
+                        <span class="chip-dot"></span>
+                        <span><span id="results-count">0</span> servers shown</span>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <span id="endpoint-label">GET /api/servers</span>
+                    </div>
+                    <div class="table-scroll" id="table-wrapper">
+                        <div class="empty-state" id="empty-state">
+                            Use the filters on the left and click <strong>“Fetch servers”</strong> to see results here.
+                        </div>
+                        <table id="results-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>RAM</th>
+                                    <th>HDD</th>
+                                    <th>Location</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination" style="display: none; justify-content: center;">
+                        <button type="button" class="btn btn-secondary" id="load-more-btn" style="width: 100%;">
+                            Load More
+                        </button>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
-    <div class="layout">
-        <section class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">Filters</div>
-                    <div class="panel-subtitle">Tune your query and fetch matching servers from the API.</div>
-                </div>
-            </div>
+    <script>
+        const form = document.getElementById('filters-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const resultsCount = document.getElementById('results-count');
+        const table = document.getElementById('results-table');
+        const tbody = document.getElementById('results-body');
+        const emptyState = document.getElementById('empty-state');
+        const endpointLabel = document.getElementById('endpoint-label');
+        const pagination = document.getElementById('pagination');
+        const loadMoreBtn = document.getElementById('load-more-btn');
 
-            <form id="filters-form">
-                <div class="filters-grid">
-                    <div class="field">
-                        <label class="field-label" for="ram_min">
-                            Minimum RAM (GB)
-                            <span>optional</span>
-                        </label>
-                        <input
-                            id="ram_min"
-                            name="ram_min"
-                            type="number"
-                            min="1"
-                            step="1"
-                            class="input"
-                            placeholder="e.g. 32"
-                        />
-                        <div class="error-text" id="ram_min_error"></div>
-                    </div>
+        const ramInput = document.getElementById('ram_min');
+        const locationInput = document.getElementById('location');
+        const priceInput = document.getElementById('price_max');
+        const ramError = document.getElementById('ram_min_error');
+        const priceError = document.getElementById('price_max_error');
 
-                    <div class="field">
-                        <label class="field-label" for="location">
-                            Location
-                            <span>optional</span>
-                        </label>
-                        <input
-                            id="location"
-                            name="location"
-                            type="text"
-                            class="input"
-                            placeholder="e.g. Amsterdam"
-                        />
-                    </div>
+        let currentCursor = null;
+        let loading = false;
+        let totalLoaded = 0;
 
-                    <div class="field">
-                        <label class="field-label" for="price_max">
-                            Maximum price (EUR)
-                            <span>optional</span>
-                        </label>
-                        <input
-                            id="price_max"
-                            name="price_max"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            class="input"
-                            placeholder="e.g. 500"
-                        />
-                        <div class="error-text" id="price_max_error"></div>
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <div class="buttons">
-                        <button type="submit" class="btn btn-primary" id="submit-btn">
-                            <span>Fetch servers</span>
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="reset-btn">
-                            Clear filters
-                        </button>
-                    </div>
-                    <div class="status" id="status">
-                        <span class="status-dot" id="status-dot"></span>
-                        <span id="status-text">Idle</span>
-                    </div>
-                </div>
-            </form>
-        </section>
-
-        <section class="panel">
-            <div class="panel-header">
-                <div>
-                    <div class="panel-title">Results</div>
-                    <div class="panel-subtitle">Servers that match the current filters.</div>
-                </div>
-                <div class="chip" id="results-summary">
-                    <span class="chip-dot"></span>
-                    <span><span id="results-count">0</span> servers</span>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <div class="table-header">
-                    <span id="endpoint-label">GET /api/servers</span>
-                </div>
-                <div class="table-scroll" id="table-wrapper">
-                    <div class="empty-state" id="empty-state">
-                        Use the filters on the left and click <strong>“Fetch servers”</strong> to see results here.
-                    </div>
-                    <table id="results-table" style="display: none;">
-                        <thead>
-                        <tr>
-                            <th>Model</th>
-                            <th>RAM</th>
-                            <th>HDD</th>
-                            <th>Location</th>
-                            <th>Price</th>
-                        </tr>
-                        </thead>
-                        <tbody id="results-body"></tbody>
-                    </table>
-                </div>
-                <div class="pagination" id="pagination" style="display: none;">
-                    <button type="button" class="btn btn-secondary" id="prev-page">Previous</button>
-                    <span class="page-info" id="page-info">Page 1 of 1</span>
-                    <button type="button" class="btn btn-secondary" id="next-page">Next</button>
-                </div>
-            </div>
-        </section>
-    </div>
-</div>
-
-<script>
-    const form = document.getElementById('filters-form');
-    const submitBtn = document.getElementById('submit-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
-    const resultsCount = document.getElementById('results-count');
-    const table = document.getElementById('results-table');
-    const tbody = document.getElementById('results-body');
-    const emptyState = document.getElementById('empty-state');
-    const endpointLabel = document.getElementById('endpoint-label');
-    const pagination = document.getElementById('pagination');
-    const prevPageBtn = document.getElementById('prev-page');
-    const nextPageBtn = document.getElementById('next-page');
-    const pageInfo = document.getElementById('page-info');
-
-    const ramInput = document.getElementById('ram_min');
-    const locationInput = document.getElementById('location');
-    const priceInput = document.getElementById('price_max');
-    const ramError = document.getElementById('ram_min_error');
-    const priceError = document.getElementById('price_max_error');
-
-    let allServers = [];
-    let currentPage = 1;
-    const pageSize = 10;
-
-    function setStatus(mode, message) {
-        statusDot.classList.remove('loading', 'error');
-        if (mode === 'loading') {
-            statusDot.classList.add('loading');
-        } else if (mode === 'error') {
-            statusDot.classList.add('error');
+        function setStatus(mode, message) {
+            statusDot.classList.remove('loading', 'error');
+            if (mode === 'loading') {
+                statusDot.classList.add('loading');
+            } else if (mode === 'error') {
+                statusDot.classList.add('error');
+            }
+            statusText.textContent = message;
         }
-        statusText.textContent = message;
-    }
 
-    function setLoadingState(loading) {
-        submitBtn.disabled = loading;
-        if (loading) {
-            setStatus('loading', 'Fetching servers…');
-        } else {
-            setStatus('idle', 'Idle');
+        function setLoadingState(isLoading) {
+            loading = isLoading;
+            submitBtn.disabled = isLoading;
+            loadMoreBtn.disabled = isLoading;
+            loadMoreBtn.textContent = isLoading ? 'Loading...' : 'Load More';
+
+            if (isLoading) {
+                setStatus('loading', 'Fetching servers…');
+            } else {
+                setStatus('idle', 'Idle');
+            }
         }
-    }
 
-    function clearValidation() {
-        ramError.textContent = '';
-        priceError.textContent = '';
-        ramInput.classList.remove('error');
-        priceInput.classList.remove('error');
-    }
+        function clearValidation() {
+            ramError.textContent = '';
+            priceError.textContent = '';
+            ramInput.classList.remove('error');
+            priceInput.classList.remove('error');
+        }
 
-    function buildQuery() {
-        const params = new URLSearchParams();
-        const ram = ramInput.value.trim();
-        const loc = locationInput.value.trim();
-        const price = priceInput.value.trim();
-
-        if (ram !== '') params.set('ram_min', ram);
-        if (loc !== '') params.set('location', loc);
-        if (price !== '') params.set('price_max', price);
-
-        return params.toString();
-    }
-
-    function updateEndpointLabel() {
-        const query = buildQuery();
-        endpointLabel.textContent = query ? `GET /api/servers?${query}` : 'GET /api/servers';
-    }
-
-    ramInput.addEventListener('input', updateEndpointLabel);
-    locationInput.addEventListener('input', updateEndpointLabel);
-    priceInput.addEventListener('input', updateEndpointLabel);
-
-    async function fetchServers(event) {
-        event.preventDefault();
-        clearValidation();
-        setLoadingState(true);
-
-        const query = buildQuery();
-        const url = query ? `/api/servers?${query}` : '/api/servers';
-
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (res.status === 400 && data && typeof data === 'object') {
-                    if (data.ram_min) {
-                    ramError.textContent = data.ram_min;
-                    ramInput.classList.add('error');
-                    }
-                    if (data.price_max) {
-                        priceError.textContent = data.price_max;
-                        priceInput.classList.add('error');
-                    }
-                    setStatus('error', 'Validation error from API');
-                } else {
-                    setStatus('error', `Request failed (${res.status})`);
+        function getSelectedLocations() {
+            const selected = [];
+            for (const option of locationInput.options) {
+                if (option.selected) {
+                    selected.push(option.value);
                 }
+            }
+            return selected;
+        }
+
+        function buildQuery(cursor = null) {
+            const params = new URLSearchParams();
+            const ram = ramInput.value.trim();
+            const price = priceInput.value.trim();
+            const locations = getSelectedLocations();
+
+            if (ram !== '') params.set('ram_min', ram);
+
+            locations.forEach(loc => params.append('location[]', loc));
+
+            if (price !== '') params.set('price_max', price);
+
+            if (cursor) {
+                params.set('cursor', cursor);
+            }
+
+            return params.toString();
+        }
+
+        function updateEndpointLabel() {
+            const query = buildQuery(null);
+            endpointLabel.textContent = query ? `GET /api/servers?${query}` : 'GET /api/servers';
+        }
+
+        ramInput.addEventListener('input', updateEndpointLabel);
+        locationInput.addEventListener('change', updateEndpointLabel);
+        priceInput.addEventListener('input', updateEndpointLabel);
+
+        async function fetchServers(isLoadMore = false) {
+            if (loading) return;
+
+            clearValidation();
+            setLoadingState(true);
+
+            const query = buildQuery(isLoadMore ? currentCursor : null);
+            const url = query ? `/api/servers?${query}` : '/api/servers';
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (res.status === 400 && data && typeof data === 'object') {
+                        if (data.ram_min) {
+                            ramError.textContent = data.ram_min;
+                            ramInput.classList.add('error');
+                        }
+                        if (data.price_max) {
+                            priceError.textContent = data.price_max;
+                            priceInput.classList.add('error');
+                        }
+                        setStatus('error', 'Validation error from API');
+                    } else {
+                        setStatus('error', `Request failed (${res.status})`);
+                    }
+                    setLoadingState(false);
+                    return;
+                }
+
+                if (typeof data !== 'object' || !Array.isArray(data.data)) {
+                    console.warn('Unexpected response shape', data);
+                    setStatus('error', 'Invalid response format');
+                    setLoadingState(false);
+                    return;
+                }
+
+                const servers = data.data;
+                currentCursor = data.cursor;
+
+                if (!isLoadMore) {
+                    tbody.innerHTML = '';
+                    totalLoaded = 0;
+                }
+
+                renderRows(servers);
+                totalLoaded += servers.length;
+                resultsCount.textContent = totalLoaded;
+
+                if (totalLoaded === 0) {
+                    table.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    emptyState.textContent = 'No servers found matching your criteria.';
+                    pagination.style.display = 'none';
+                } else {
+                    table.style.display = 'table';
+                    emptyState.style.display = 'none';
+
+                    if (currentCursor) {
+                        pagination.style.display = 'flex';
+                    } else {
+                        pagination.style.display = 'none';
+                    }
+                }
+
                 setLoadingState(false);
-                return;
+                if (!isLoadMore) {
+                    setStatus('idle', `Loaded ${servers.length} servers`);
+                } else {
+                    setStatus('idle', `Loaded ${totalLoaded} servers total`);
+                }
+
+            } catch (error) {
+                console.error(error);
+                setStatus('error', 'Network or server error');
+                setLoadingState(false);
             }
-
-            if (!Array.isArray(data)) {
-                console.warn('Unexpected response shape', data);
-            }
-
-            renderTable(Array.isArray(data) ? data : []);
-            setLoadingState(false);
-        } catch (error) {
-            console.error(error);
-            setStatus('error', 'Network or server error');
-            setLoadingState(false);
         }
-    }
 
-    function renderTable(servers) {
-        allServers = servers;
-        currentPage = 1;
-        tbody.innerHTML = '';
+        function renderRows(servers) {
+            servers.forEach((s) => {
+                const tr = document.createElement('tr');
+                const model = s.Model || s['Model Name'] || s.Server || '—';
+                const ram = s.RAM ?? '—';
+                const hdd = s.HDD ?? '—';
+                const location = s.Location ?? '—';
+                const price = s.Price ?? '—';
 
-        if (!allServers.length) {
-            table.style.display = 'none';
-            emptyState.style.display = 'block';
-            resultsCount.textContent = '0';
-            pagination.style.display = 'none';
-            setStatus('idle', 'No results');
-            return;
-        }
-        resultsCount.textContent = String(allServers.length);
-        table.style.display = 'table';
-        emptyState.style.display = 'none';
-        pagination.style.display = 'flex';
-        renderPage();
-        setStatus('idle', `Loaded ${allServers.length} servers`);
-    }
-
-    function renderPage() {
-        tbody.innerHTML = '';
-
-        const total = allServers.length;
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
-        const start = (currentPage - 1) * pageSize;
-        const pageItems = allServers.slice(start, start + pageSize);
-
-        pageItems.forEach((s) => {
-            const tr = document.createElement('tr');
-            const model = s.Model || s['Model Name'] || s.Server || '—';
-            const ram = s.RAM ?? '—';
-            const hdd = s.HDD ?? '—';
-            const location = s.Location ?? '—';
-            const price = s.Price ?? '—';
-
-            tr.innerHTML = `
+                tr.innerHTML = `
                 <td>${model}</td>
                 <td>${ram}</td>
                 <td>${hdd}</td>
@@ -609,54 +622,47 @@
                 <td>${price}</td>
             `;
 
-            tbody.appendChild(tr);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function resetFilters() {
+            ramInput.value = '';
+            for (const option of locationInput.options) {
+                option.selected = false;
+            }
+            priceInput.value = '';
+            clearValidation();
+            updateEndpointLabel();
+            tbody.innerHTML = '';
+            table.style.display = 'none';
+            emptyState.style.display = 'block';
+            emptyState.innerHTML = 'Use the filters on the left and click <strong>“Fetch servers”</strong> to see results here.';
+            resultsCount.textContent = '0';
+            pagination.style.display = 'none';
+            currentCursor = null;
+            totalLoaded = 0;
+            setStatus('idle', 'Filters cleared');
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            fetchServers(false);
         });
 
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === totalPages;
-    }
+        resetBtn.addEventListener('click', resetFilters);
 
-    function resetFilters() {
-        ramInput.value = '';
-        locationInput.value = '';
-        priceInput.value = '';
-        clearValidation();
+        loadMoreBtn.addEventListener('click', () => {
+            if (currentCursor) {
+                fetchServers(true);
+            }
+        });
+
         updateEndpointLabel();
-        tbody.innerHTML = '';
-        table.style.display = 'none';
-        emptyState.style.display = 'block';
-        resultsCount.textContent = '0';
-        pagination.style.display = 'none';
-        allServers = [];
-        currentPage = 1;
-        setStatus('idle', 'Filters cleared');
-    }
 
-    form.addEventListener('submit', fetchServers);
-    resetBtn.addEventListener('click', resetFilters);
-
-    prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage -= 1;
-            renderPage();
-        }
-    });
-
-    nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.max(1, Math.ceil(allServers.length / pageSize));
-        if (currentPage < totalPages) {
-            currentPage += 1;
-            renderPage();
-        }
-    });
-
-    updateEndpointLabel();
-
-    window.addEventListener('DOMContentLoaded', () => {
-        form.dispatchEvent(new Event('submit'));
-    });
-</script>
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchServers(false);
+        });
+    </script>
 </body>
 </html>
-

@@ -7,3 +7,10 @@ services:
       - ./src:/var/www/src
       - ./public:/var/www/public
       - ./tests:/var/www/tests
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"

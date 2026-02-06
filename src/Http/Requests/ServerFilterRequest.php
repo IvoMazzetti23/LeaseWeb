@@ -60,19 +60,39 @@ class ServerFilterRequest
         return (int) $value;
     }
 
-    public function getLocation(): ?string
+    public function getLocation(): ?array
     {
         $value = $this->request->query('location');
         if ($value === null) {
             return null;
         }
 
-        $value = trim(strip_tags((string) $value));
-        if ($value === '') {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            } else {
+                $value = explode(',', $value);
+            }
+        }
+
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $locations = [];
+        foreach ($value as $loc) {
+            $loc = trim(strip_tags((string) $loc));
+            if ($loc !== '') {
+                $locations[] = $loc;
+            }
+        }
+
+        if (empty($locations)) {
             return null;
         }
 
-        return $value;
+        return $locations;
     }
 
     public function getMaxPrice(): ?float
@@ -90,5 +110,36 @@ class ServerFilterRequest
         }
 
         return (float) $value;
+    }
+
+    public function getCursor(): ?string
+    {
+        $value = $this->request->query('cursor');
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim(strip_tags((string) $value));
+        if ($value === '') {
+            return null;
+        }
+
+        return $value;
+    }
+
+    public function getLimit(int $default = 20): int
+    {
+        $value = $this->request->query('limit');
+        if ($value === null) {
+            return $default;
+        }
+
+        $valid = filter_var($value, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1, "max_range" => 100]]);
+        if ($valid === false) {
+            $this->errors['limit'] = 'limit must be a positive integer between 1 and 100.';
+            return $default;
+        }
+
+        return (int) $value;
     }
 }
